@@ -12,7 +12,7 @@ minio_download_url: https://dl.min.io/server/minio/release/linux-amd64/minio
 minio_mc_download_url: https://dl.min.io/client/mc/release/linux-amd64/mc
 
 # --- Учётные данные (пароль берётся из vault.yml) ---
-minio_root_user: "admin"
+minio_root_user: "{{ansible_user | default('admin')}}"
 minio_root_password: "{{ vault_minio_root_password }}"
 
 # --- Бакеты для GitLab ---
