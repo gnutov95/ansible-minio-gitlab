@@ -1,0 +1,29 @@
+# --- Пользователь и пути ---
+minio_user: minio
+minio_bin_path: /usr/local/bin/minio
+minio_mc_path: /usr/local/bin/mc
+minio_data_dir: /data/minio
+minio_work_dir: /usr/local/minio
+minio_env_file: /etc/default/minio
+minio_service_file: /etc/systemd/system/minio.service
+
+# --- URL для скачивания ---
+minio_download_url: https://dl.min.io/server/minio/release/linux-amd64/minio
+minio_mc_download_url: https://dl.min.io/client/mc/release/linux-amd64/mc
+
+# --- Учётные данные (пароль берётся из vault.yml) ---
+minio_root_user: "admin"
+minio_root_password: "{{ vault_minio_root_password }}"
+
+# --- Бакеты для GitLab ---
+minio_buckets:
+  - gitlab-artifacts
+  - gitlab-lfs
+  - gitlab-uploads
+  - gitlab-packages
+  - gitlab-mr-diffs
+
+# --- Обновление ---
+# false = только установка (по умолчанию), true = принудительно обновить бинарник
+minio_upgrade: false
+minio_bin_backup_path: "{{ minio_bin_path }}.bak"

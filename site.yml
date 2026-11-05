@@ -1,0 +1,5 @@
+- name: Deploy MinIO for GitLab Artifacts
+  hosts: minio_servers
+  become: yes
+  roles:
+    - role: minio

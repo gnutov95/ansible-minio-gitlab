@@ -1,0 +1,89 @@
+---
+# 1. Скачивание бинарника MinIO (принудительно только при обновлении)
+- name: Download MinIO server binary
+  get_url:
+    url: "{{ minio_download_url }}"
+    dest: "{{ minio_bin_path }}"
+    mode: '0750'
+    force: "{{ minio_upgrade | bool }}"
+  notify: restart minio
+
+# 2. Скачивание клиента mc
+- name: Download MinIO client (mc)
+  get_url:
+    url: "{{ minio_mc_download_url }}"
+    dest: "{{ minio_mc_path }}"
+    mode: '0755'
+
+# 3. Системный пользователь
+- name: Create dedicated system user for MinIO
+  user:
+    name: "{{ minio_user }}"
+    shell: /sbin/nologin
+    system: yes
+    state: present
+
+# 4. Каталоги данных и работы
+- name: Create MinIO data and working directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ minio_user }}"
+    group: "{{ minio_user }}"
+    mode: '0755'
+  loop:
+    - "{{ minio_data_dir }}"
+    - "{{ minio_work_dir }}"
+
+# 5. Файл переменных окружения
+- name: Create MinIO environment file
+  template:
+    src: minio.env.j2
+    dest: "{{ minio_env_file }}"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_user }}"
+    mode: '0600'
+  notify: restart minio
+
+# 6. Юнит systemd
+- name: Create systemd service file for MinIO
+  template:
+    src: minio.service.j2
+    dest: "{{ minio_service_file }}"
+    mode: '0644'
+  notify: restart minio
+
+# 7. Запуск и автозапуск
+- name: Reload systemd and start MinIO service
+  systemd:
+    name: minio
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+# 8. Ожидание готовности API
+- name: Wait for MinIO to be ready
+  wait_for:
+    port: 9000
+    delay: 5
+    timeout: 30
+
+# 9. Настройка alias и создание бакетов
+- name: Configure mc alias and create required buckets for GitLab
+  shell: |
+    {{ minio_mc_path }} alias set local http://127.0.0.1:9000 {{ minio_root_user }} {{ minio_root_password }}
+    {% for bucket in minio_buckets %}
+    {{ minio_mc_path }} mb --ignore-existing local/{{ bucket }}
+    {% endfor %}
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+# 10. Резервная копия при обновлении
+- name: Backup existing MinIO binary before upgrade
+  copy:
+    src: "{{ minio_bin_path }}"
+    dest: "{{ minio_bin_backup_path }}"
+    remote_src: yes
+    mode: '0750'
+  when: minio_upgrade | bool

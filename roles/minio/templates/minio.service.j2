@@ -1,0 +1,17 @@
+[Unit]
+Description=MinIO
+Wants=network-online.target
+After=network-online.target
+AssertFileIsExecutable={{ minio_bin_path }}
+
+[Service]
+WorkingDirectory={{ minio_work_dir }}
+User={{ minio_user }}
+Group={{ minio_user }}
+EnvironmentFile={{ minio_env_file }}
+ExecStart={{ minio_bin_path }} server $MINIO_OPTS $MINIO_VOLUMES
+Restart=always
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
